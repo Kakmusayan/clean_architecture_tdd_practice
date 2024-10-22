@@ -43,6 +43,5 @@ void main() {
     expect(result, Right(tNumberTrivia));
     verify(mockNumberTriviaRepository.getRandomNumberTrivia());
     verifyNoMoreInteractions(mockNumberTriviaRepository);
-    //assert
   });
 }
