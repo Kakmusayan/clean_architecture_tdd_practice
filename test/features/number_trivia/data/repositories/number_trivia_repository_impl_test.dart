@@ -4,6 +4,7 @@ import 'package:clean_architecture_tdd_practice/features/number_trivia/data/data
 import 'package:clean_architecture_tdd_practice/features/number_trivia/data/models/number_trivia_model.dart';
 import 'package:clean_architecture_tdd_practice/features/number_trivia/data/repositories/number_trivia_repository_impl.dart';
 import 'package:clean_architecture_tdd_practice/features/number_trivia/domain/entities/number_trivia.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
@@ -19,7 +20,7 @@ void main() {
   // ignore: unused_local_variable
   late NumberTriviaRepositoryImpl repository;
   NumberTriviaLocalDataSource mockNumberTriviaLocalDataSourceImpl;
-  NumberTriviaRemoteDataSource mockNumberTriviaRemoteDataSourceImpl;
+  late NumberTriviaRemoteDataSource mockNumberTriviaRemoteDataSourceImpl;
   late NetworkInfo mockNetworkInfo;
 
   setUp(() {
@@ -47,6 +48,27 @@ void main() {
       repository.getConcreteNumberTrivia(tNumber);
       //assert
       verify(mockNetworkInfo.isConnected);
+    });
+
+    group("device is online", () {
+      // setUp(() {
+      //   when(mockNetworkInfo.isConnected).thenAnswer((_) async => true);
+      // });
+
+      test(
+          "should return remote data when the call to remote data source is successful",
+          () async {
+        //arrange
+        when(mockNumberTriviaRemoteDataSourceImpl
+                .getConcreteNumberTrivia(tNumber))
+            .thenAnswer((_) async => tNumberTriviaModel);
+        //act
+        final result = await repository.getConcreteNumberTrivia(tNumber);
+        //assert
+        verify(mockNumberTriviaRemoteDataSourceImpl
+            .getConcreteNumberTrivia(tNumber));
+        expect(result, equals(Right(tNumberTrivia)));
+      });
     });
   });
 }
