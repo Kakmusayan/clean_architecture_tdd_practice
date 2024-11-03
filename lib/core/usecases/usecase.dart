@@ -10,3 +10,9 @@ class NoParams extends Equatable {
   @override
   List<Object?> get props => [];
 }
+
+class NoParams extends Equatable {
+  const NoParams() : super();
+  @override
+  List<Object?> get props => [];
+}
