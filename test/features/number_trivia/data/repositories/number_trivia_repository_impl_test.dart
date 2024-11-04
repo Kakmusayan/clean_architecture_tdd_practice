@@ -1,3 +1,4 @@
+import 'package:clean_architecture_tdd_practice/core/error/exceptions.dart';
 import 'package:clean_architecture_tdd_practice/core/error/failures.dart';
 import 'package:clean_architecture_tdd_practice/core/platform/network_info.dart';
 import 'package:clean_architecture_tdd_practice/features/number_trivia/data/datasources/number_trivia_local_data_source.dart';
@@ -35,6 +36,25 @@ void main() {
       networkInfo: mockNetworkInfo,
     );
   });
+
+  void runTestsOnline(Function body) {
+    group("device is online", () {
+      setUp(() {
+        when(mockNetworkInfo.isConnected).thenAnswer((_) async => true);
+      });
+      body();
+    });
+  }
+
+  void runTestsOffline(Function body) {
+    group("device is offline", () {
+      setUp(() {
+        when(mockNetworkInfo.isConnected).thenAnswer((_) async => false);
+      });
+      body();
+    });
+  }
+
   group("getConcreteNumberTrivia", () {
     final tNumber = 1;
 
@@ -51,11 +71,7 @@ void main() {
       verify(mockNetworkInfo.isConnected);
     });
 
-    group("device is online", () {
-      setUp(() {
-        when(mockNetworkInfo.isConnected).thenAnswer((_) async => true);
-      });
-
+    runTestsOnline(() {
       test(
           "should return remote data when the call to remote data source is successful",
           () async {
@@ -93,7 +109,7 @@ void main() {
         //arrange
         when(mockNumberTriviaRemoteDataSourceImpl
                 .getConcreteNumberTrivia(tNumber))
-            .thenAnswer((_) async => tNumberTriviaModel);
+            .thenThrow(ServerException());
         //act
         final result = await repository.getConcreteNumberTrivia(tNumber);
         //assert
@@ -104,17 +120,12 @@ void main() {
       });
     });
 
-    group("device is offline", () {
-      setUp(() {
-        when(mockNetworkInfo.isConnected).thenAnswer((_) async => false);
-      });
-
+    runTestsOffline(() {
       test(
           "should return last locally cached data when the cached data is present",
           () async {
         //arrange
-        when(mockNumberTriviaRemoteDataSourceImpl
-                .getConcreteNumberTrivia(tNumber))
+        when(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia())
             .thenAnswer((_) async => tNumberTriviaModel);
         //act
         final result = await repository.getConcreteNumberTrivia(tNumber);
@@ -123,6 +134,105 @@ void main() {
         verify(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia());
         expect(result, equals(Right(tNumberTrivia)));
       });
+
+      test("should return cache failure when there is no cached data present",
+          () async {
+        //arrange
+        when(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia())
+            .thenThrow(CacheException());
+        //act
+        final result = await repository.getConcreteNumberTrivia(tNumber);
+        //assert
+        verify(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia());
+        expect(result, equals(Left(CacheFailure())));
+      });
+    });
+  });
+
+  group("getRandomNumberTrivia", () {
+    final tNumberTriviaModel =
+        NumberTriviaModel(number: 123, text: "test trivia");
+    final NumberTrivia tNumberTrivia = tNumberTriviaModel;
+
+    test("should check is the device is online", () {
+      //arrange
+      when(mockNetworkInfo.isConnected).thenAnswer((_) async => true);
+      //act
+      repository.getRandomNumberTrivia();
+      //assert
+      verify(mockNetworkInfo.isConnected);
+    });
+
+    runTestsOnline(() {
+      test(
+          "should return remote data when the call to remote data source is successfull",
+          () async {
+        //arrange
+        when(mockNumberTriviaRemoteDataSourceImpl.getRandomNumberTrivia())
+            .thenAnswer((_) async => tNumberTriviaModel);
+        //act
+        final result = await repository.getRandomNumberTrivia();
+        //assert
+        verify(mockNumberTriviaRemoteDataSourceImpl.getRandomNumberTrivia());
+        expect(result, equals(Right(tNumberTrivia)));
+      });
+      test(
+          "should cache data locally, when the call to remote data source is successfull",
+          () async {
+        //arrange
+        when(mockNumberTriviaRemoteDataSourceImpl.getRandomNumberTrivia())
+            .thenAnswer((_) async => tNumberTriviaModel);
+        //act
+        await repository.getRandomNumberTrivia();
+        //assert
+        verify(mockNumberTriviaRemoteDataSourceImpl.getRandomNumberTrivia());
+        verify(mockNumberTriviaLocalDataSourceImpl
+            .cacheNumberTrivia(tNumberTrivia));
+      });
+
+      test(
+          "should return server failure when the call to remote data source is unsuccessfull",
+          () async {
+        //arrange
+        when(mockNumberTriviaRemoteDataSourceImpl.getRandomNumberTrivia())
+            .thenThrow(ServerException());
+        //act
+        final result = await repository.getRandomNumberTrivia();
+        //assert
+        verify(mockNumberTriviaRemoteDataSourceImpl.getRandomNumberTrivia());
+        verifyZeroInteractions(mockNumberTriviaLocalDataSourceImpl);
+        expect(result, equals(Left(ServerFailure())));
+      });
+    });
+
+    runTestsOffline(() {
+      test(
+          "should return last locally cached data when the cached data is present",
+          () async {
+        //arrange
+        when(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia())
+            .thenAnswer((_) async => tNumberTriviaModel);
+        //act
+        final result = await repository.getRandomNumberTrivia();
+
+        //assert
+        verifyZeroInteractions(mockNumberTriviaRemoteDataSourceImpl);
+        verify(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia());
+        expect(result, equals(Right(tNumberTrivia)));
+      });
+    });
+
+    test("should return cache failure when there is no cached data present",
+        () async {
+      //arrange
+      when(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia())
+          .thenThrow(CacheException());
+      //act
+      final result = await repository.getRandomNumberTrivia();
+      //assert
+      verifyZeroInteractions(mockNumberTriviaRemoteDataSourceImpl);
+      verify(mockNumberTriviaLocalDataSourceImpl.getLastNumberTrivia());
+      expect(result, equals(Left(CacheFailure())));
     });
   });
 }
