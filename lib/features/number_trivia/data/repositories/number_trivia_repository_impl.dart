@@ -1,6 +1,6 @@
 import 'package:clean_architecture_tdd_practice/core/error/exceptions.dart';
 import 'package:clean_architecture_tdd_practice/core/error/failures.dart';
-import 'package:clean_architecture_tdd_practice/core/platform/network_info.dart';
+import 'package:clean_architecture_tdd_practice/core/network/network_info.dart';
 import 'package:clean_architecture_tdd_practice/features/number_trivia/data/datasources/number_trivia_local_data_source.dart';
 import 'package:clean_architecture_tdd_practice/features/number_trivia/data/datasources/number_trivia_remote_data_source.dart';
 import 'package:clean_architecture_tdd_practice/features/number_trivia/domain/entities/number_trivia.dart';

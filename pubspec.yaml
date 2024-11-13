@@ -20,13 +20,14 @@ dependencies:
   # Functional programming thingies
   dartz: ^0.10.1
   # Remote API
-  connectivity: ^3.0.6
+  internet_connection_checker_plus: ^2.5.2
   http: ^1.1.0
   # Local cache
   shared_preferences: ^2.2.3
 
  
   cupertino_icons: ^1.0.2
+  
 
 dev_dependencies:
   flutter_test:
